@@ -1,4 +1,4 @@
-[submodule "deps/libssh"]
+[submodule "deps/libssh-mirror"]
     path = deps/libssh-mirror
     url = https://github.com/libssh/libssh-mirror.git
     branch = libssh-0.7.0
