@@ -1224,7 +1224,7 @@ module frr-ospfd-lite {
         description
           "VRF name.";
       }
-
+/*
       uses common:route-ospf-leaf-attributes;
       uses common:default-info-group;
       uses ospfv2-redistribute-group;
@@ -1236,7 +1236,7 @@ module frr-ospfd-lite {
       uses common:timer-group;
       uses common:segment-routing-group;
       uses ospfv2-list-group;
-
+*/
       container state {
         /* IETF model doesn't have a defined container for state */
         config false;
@@ -1275,7 +1275,7 @@ module frr-ospfd-lite {
         description "Stete for the ospf interface.";
         uses ospfv2-interface-state;
       }
-      uses common:interface-ospf-attribute-group;
+      // uses common:interface-ospf-attribute-group;
     }
   }
 }

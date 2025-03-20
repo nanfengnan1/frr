@@ -1370,7 +1370,7 @@ module frr-ospf-common-lite {
           type ospf-area-id;
           description "OSPF Area ID.";
         }
-
+/*
         container authentication {
           presence "Enable authentication";
           description "XXX";
@@ -1425,7 +1425,7 @@ module frr-ospf-common-lite {
         uses stub-grouping;
 
         uses shortcut-grouping;
-
+*/
         container state {
           /* XXX The ietf model has no container for it's area state.
            * Should a container be avoided in this case? */
@@ -1435,7 +1435,7 @@ module frr-ospf-common-lite {
           /* when useing, augment protocol specific state here */
         }
 
-        uses virtual-link-group;
+        // uses virtual-link-group;
       }
     }
   }
