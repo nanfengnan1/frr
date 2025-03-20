@@ -72,6 +72,41 @@ const struct frr_yang_module_info frr_ospfd_lite_info = {
 			}
 		},
 		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/ospf/abr-type",
+			.cbs = {
+				.modify = ospf_instance_ospf_abr_type_modify,
+				.destroy = ospf_instance_ospf_abr_type_destroy,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/ospf/opaque-lsa",
+			.cbs = {
+				.modify = ospf_instance_ospf_opaque_lsa_modify,
+				.destroy = ospf_instance_ospf_opaque_lsa_destroy,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/ospf/rfc1583compatibility",
+			.cbs = {
+				.modify = ospf_instance_ospf_rfc1583compatibility_modify,
+				.destroy = ospf_instance_ospf_rfc1583compatibility_destroy,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/ospf/router-id",
+			.cbs = {
+				.modify = ospf_instance_ospf_router_id_modify,
+				.destroy = ospf_instance_ospf_router_id_destroy,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/ospf/write-multiplier",
+			.cbs = {
+				.modify = ospf_instance_ospf_write_multiplier_modify,
+				.destroy = ospf_instance_ospf_write_multiplier_destroy,
+			}
+		},		
+		{
 			.xpath = "/frr-ospfd-lite:ospf/instance/state/router-flags/router-flag",
 			.cbs = {
 				.get_elem = ospf_instance_state_router_flags_router_flag_get_elem,

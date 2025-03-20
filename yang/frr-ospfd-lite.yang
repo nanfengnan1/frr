@@ -1232,7 +1232,9 @@ module frr-ospfd-lite {
       uses ospfv2-distribute-list-group;
       uses common:max-metric-group;
       uses common:mpls-te-group;
+*/
       uses ospfv2-group;
+/*
       uses common:timer-group;
       uses common:segment-routing-group;
       uses ospfv2-list-group;

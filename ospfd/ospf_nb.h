@@ -35,6 +35,20 @@ int ospf_instance_destroy(struct nb_cb_destroy_args *args);
 const void *ospf_instance_get_next(struct nb_cb_get_next_args *args);
 int ospf_instance_get_keys(struct nb_cb_get_keys_args *args);
 const void *ospf_instance_lookup_entry(struct nb_cb_lookup_entry_args *args);
+
+
+int ospf_instance_ospf_abr_type_modify(struct nb_cb_modify_args *args);
+int ospf_instance_ospf_abr_type_destroy(struct nb_cb_destroy_args *args);
+int ospf_instance_ospf_opaque_lsa_modify(struct nb_cb_modify_args *args);
+int ospf_instance_ospf_opaque_lsa_destroy(struct nb_cb_destroy_args *args);
+int ospf_instance_ospf_rfc1583compatibility_modify(struct nb_cb_modify_args *args);
+int ospf_instance_ospf_rfc1583compatibility_destroy(struct nb_cb_destroy_args *args);
+int ospf_instance_ospf_router_id_modify(struct nb_cb_modify_args *args);
+int ospf_instance_ospf_router_id_destroy(struct nb_cb_destroy_args *args);
+int ospf_instance_ospf_write_multiplier_modify(struct nb_cb_modify_args *args);
+int ospf_instance_ospf_write_multiplier_destroy(struct nb_cb_destroy_args *args);
+
+
 struct yang_data *ospf_instance_state_router_flags_router_flag_get_elem(struct nb_cb_get_elem_args *args);
 const void *ospf_instance_state_router_flags_router_flag_get_next(struct nb_cb_get_next_args *args);
 struct yang_data *ospf_instance_state_statistics_originate_new_lsa_count_get_elem(struct nb_cb_get_elem_args *args);
