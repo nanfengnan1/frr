@@ -427,6 +427,18 @@ lib_sysrepo_la_LIBADD = lib/libfrr.la $(SYSREPO_LIBS)
 lib_sysrepo_la_SOURCES = lib/northbound_sysrepo.c
 
 #
+# Hiredis support
+#
+if HIREDIS
+module_LTLIBRARIES += lib/hiredis.la
+endif
+
+lib_hiredis_la_CFLAGS = $(AM_CFLAGS) $(HIREDIS_CFLAGS)
+lib_hiredis_la_LDFLAGS = $(MODULE_LDFLAGS)
+lib_hiredis_la_LIBADD = lib/libfrr.la $(HIREDIS_LIBS) $(UV_LIBS)
+lib_hiredis_la_SOURCES = lib/northbound_hiredis.c
+
+#
 # gRPC northbound plugin
 #
 if GRPC
