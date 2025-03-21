@@ -1228,7 +1228,9 @@ module frr-ospfd-lite {
       uses common:route-ospf-leaf-attributes;
       uses common:default-info-group;
       uses ospfv2-redistribute-group;
+*/
       uses common:distance-group;
+/*
       uses ospfv2-distribute-list-group;
       uses common:max-metric-group;
       uses common:mpls-te-group;

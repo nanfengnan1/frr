@@ -36,6 +36,14 @@ const void *ospf_instance_get_next(struct nb_cb_get_next_args *args);
 int ospf_instance_get_keys(struct nb_cb_get_keys_args *args);
 const void *ospf_instance_lookup_entry(struct nb_cb_lookup_entry_args *args);
 
+int ospf_instance_distance_admin_value_modify(struct nb_cb_modify_args *args);
+int ospf_instance_distance_admin_value_destroy(struct nb_cb_destroy_args *args);
+int ospf_instance_distance_ospf_external_modify(struct nb_cb_modify_args *args);
+int ospf_instance_distance_ospf_external_destroy(struct nb_cb_destroy_args *args);
+int ospf_instance_distance_ospf_inter_area_modify(struct nb_cb_modify_args *args);
+int ospf_instance_distance_ospf_inter_area_destroy(struct nb_cb_destroy_args *args);
+int ospf_instance_distance_ospf_intra_area_modify(struct nb_cb_modify_args *args);
+int ospf_instance_distance_ospf_intra_area_destroy(struct nb_cb_destroy_args *args);
 
 int ospf_instance_ospf_abr_type_modify(struct nb_cb_modify_args *args);
 int ospf_instance_ospf_abr_type_destroy(struct nb_cb_destroy_args *args);
