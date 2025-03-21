@@ -44,6 +44,8 @@
 #include "ospfd/ospf_network.h"
 #include "ospfd/ospf_memory.h"
 
+#include "northbound_cli.h"
+
 FRR_CFG_DEFAULT_BOOL(OSPF_LOG_ADJACENCY_CHANGES,
 	{ .val_bool = true, .match_profile = "datacenter", },
 	{ .val_bool = false },
@@ -173,7 +175,7 @@ static void ospf_show_vrf_name(struct ospf *ospf, struct vty *vty,
 
 #include "ospfd/ospf_vty_clippy.c"
 
-DEFUN_NOSH (router_ospf,
+DEFPY_YANG_NOSH (router_ospf,
        router_ospf_cmd,
        "router ospf [{(1-65535)|vrf NAME}]",
        "Enable a routing process\n"
@@ -181,11 +183,12 @@ DEFUN_NOSH (router_ospf,
        "Instance ID\n"
        VRF_CMD_HELP_STR)
 {
+	struct ospf *obj;
+	char xpath[XPATH_MAXLEN];
+	int ret;
+
 	unsigned short instance;
 	const char *vrf_name;
-	bool created = false;
-	struct ospf *ospf;
-	int ret;
 
 	ret = ospf_router_cmd_parse(vty, argv, argc, &instance, &vrf_name);
 	if (ret != CMD_SUCCESS)
@@ -196,81 +199,49 @@ DEFUN_NOSH (router_ospf,
 		return CMD_NOT_MY_INSTANCE;
 	}
 
-	ospf = ospf_get(instance, vrf_name, &created);
+	snprintf(xpath, sizeof(xpath), "/frr-ospfd-lite:ospf/instance[vrf='%s']", vrf_name);
 
-	if (created)
-		if (DFLT_OSPF_LOG_ADJACENCY_CHANGES)
-			SET_FLAG(ospf->config, OSPF_LOG_ADJACENCY_CHANGES);
+	nb_cli_enqueue_change(vty, xpath, NB_OP_CREATE, NULL);
+	ret = nb_cli_apply_changes(vty, NULL);
+	if (ret == CMD_SUCCESS)
+		VTY_PUSH_XPATH(OSPF_NODE, xpath);
 
-	if (IS_DEBUG_OSPF_EVENT)
-		zlog_debug(
-			"Config command 'router ospf %d' received, vrf %s id %u oi_running %u",
-			ospf->instance, ospf_get_name(ospf), ospf->vrf_id,
-			ospf->oi_running);
-
-	VTY_PUSH_CONTEXT(OSPF_NODE, ospf);
+	/* this steps is pretty imporment, notify this vty client ospf instance */
+	obj = ospf_lookup_instance(instance);
+	VTY_PUSH_CONTEXT(OSPF_NODE, obj);
 
 	return ret;
 }
 
-DEFUN (no_router_ospf,
-       no_router_ospf_cmd,
-       "no router ospf [{(1-65535)|vrf NAME}]",
-       NO_STR
-       "Enable a routing process\n"
-       "Start OSPF configuration\n"
-       "Instance ID\n"
-       VRF_CMD_HELP_STR)
+DEFPY_YANG (no_router_ospf,
+			no_router_ospf_cmd,
+			"no router ospf [{(1-65535)|vrf NAME}]",
+			NO_STR
+			"Enable a routing process\n"
+			"Start OSPF configuration\n"
+			"Instance ID\n"
+			VRF_CMD_HELP_STR)
 {
-	unsigned short instance;
-	const char *vrf_name;
-	struct ospf *ospf;
-	int ret;
+	char xpath[XPATH_MAXLEN];
 
-	ret = ospf_router_cmd_parse(vty, argv, argc, &instance, &vrf_name);
-	if (ret != CMD_SUCCESS)
-		return ret;
+	/* Build OSPF instance XPath. */
+	if (!vrf)
+		vrf = VRF_DEFAULT_NAME;
 
-	if (instance != ospf_instance)
-		return CMD_NOT_MY_INSTANCE;
-
-	ospf = ospf_lookup(instance, vrf_name);
-	if (ospf) {
-		if (ospf->gr_info.restart_support)
-			ospf_gr_nvm_delete(ospf);
-
-		ospf_finish(ospf);
-	} else
-		ret = CMD_WARNING_CONFIG_FAILED;
-
-	return ret;
+	snprintf(xpath, sizeof(xpath), "/frr-ospfd-lite:ospf/instance[vrf='%s']", vrf);
+	nb_cli_enqueue_change(vty, xpath, NB_OP_DESTROY, NULL);
+	return nb_cli_apply_changes_clear_pending(vty, NULL);
 }
 
-
-DEFPY (ospf_router_id,
-       ospf_router_id_cmd,
-       "ospf router-id A.B.C.D",
-       "OSPF specific commands\n"
-       "router-id for the OSPF process\n"
-       "OSPF router-id in IP address format\n")
+DEFPY_YANG (ospf_router_id,
+			 ospf_router_id_cmd,
+			 "ospf router-id A.B.C.D",
+			 "OSPF specific commands\n"
+			 "router-id for the OSPF process\n"
+			 "OSPF router-id in IP address format\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-
-	struct listnode *node;
-	struct ospf_area *area;
-
-	ospf->router_id_static = router_id;
-
-	for (ALL_LIST_ELEMENTS_RO(ospf->areas, node, area))
-		if (area->full_nbrs) {
-			vty_out(vty,
-				"For this router-id change to take effect, use \"clear ip ospf process\" command\n");
-			return CMD_SUCCESS;
-		}
-
-	ospf_router_id_update(ospf);
-
-	return CMD_SUCCESS;
+	nb_cli_enqueue_change(vty, "./ospf/router-id", NB_OP_MODIFY, router_id_str);
+	return nb_cli_apply_changes(vty, NULL);
 }
 
 DEFUN_HIDDEN (ospf_router_id_old,
@@ -306,37 +277,16 @@ DEFUN_HIDDEN (ospf_router_id_old,
 	return CMD_SUCCESS;
 }
 
-DEFPY (no_ospf_router_id,
-       no_ospf_router_id_cmd,
-       "no ospf router-id [A.B.C.D]",
-       NO_STR
-       "OSPF specific commands\n"
-       "router-id for the OSPF process\n"
-       "OSPF router-id in IP address format\n")
+DEFPY_YANG (no_ospf_router_id,
+			 no_ospf_router_id_cmd,
+			 "no ospf router-id [A.B.C.D]",
+			 NO_STR
+			 "OSPF specific commands\n"
+			 "router-id for the OSPF process\n"
+			 "OSPF router-id in IP address format\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-	struct listnode *node;
-	struct ospf_area *area;
-
-	if (router_id_str) {
-		if (!IPV4_ADDR_SAME(&ospf->router_id_static, &router_id)) {
-			vty_out(vty, "%% OSPF router-id doesn't match\n");
-			return CMD_WARNING_CONFIG_FAILED;
-		}
-	}
-
-	ospf->router_id_static.s_addr = 0;
-
-	for (ALL_LIST_ELEMENTS_RO(ospf->areas, node, area))
-		if (area->full_nbrs) {
-			vty_out(vty,
-				"For this router-id change to take effect, use \"clear ip ospf process\" command\n");
-			return CMD_SUCCESS;
-		}
-
-	ospf_router_id_update(ospf);
-
-	return CMD_SUCCESS;
+	nb_cli_enqueue_change(vty, "./ospf/router-id", NB_OP_DESTROY, router_id_str);
+	return nb_cli_apply_changes(vty, NULL);
 }
 
 ALIAS_HIDDEN (no_ospf_router_id,
@@ -2078,81 +2028,33 @@ DEFUN (no_ospf_area_authentication,
 	return CMD_SUCCESS;
 }
 
-
-DEFUN (ospf_abr_type,
-       ospf_abr_type_cmd,
-       "ospf abr-type <cisco|ibm|shortcut|standard>",
-       "OSPF specific commands\n"
-       "Set OSPF ABR type\n"
-       "Alternative ABR, cisco implementation\n"
-       "Alternative ABR, IBM implementation\n"
-       "Shortcut ABR\n"
-       "Standard behavior (RFC2328)\n")
+DEFPY_YANG (ospf_abr_type,
+				ospf_abr_type_cmd,
+				"ospf abr-type <cisco|ibm|shortcut|standard>",
+				"OSPF specific commands\n"
+				"Set OSPF ABR type\n"
+				"Alternative ABR, cisco implementation\n"
+				"Alternative ABR, IBM implementation\n"
+				"Shortcut ABR\n"
+				"Standard behavior (RFC2328)\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-	int idx_vendor = 2;
-	uint8_t abr_type = OSPF_ABR_UNKNOWN;
-
-	if (strncmp(argv[idx_vendor]->arg, "c", 1) == 0)
-		abr_type = OSPF_ABR_CISCO;
-	else if (strncmp(argv[idx_vendor]->arg, "i", 1) == 0)
-		abr_type = OSPF_ABR_IBM;
-	else if (strncmp(argv[idx_vendor]->arg, "sh", 2) == 0)
-		abr_type = OSPF_ABR_SHORTCUT;
-	else if (strncmp(argv[idx_vendor]->arg, "st", 2) == 0)
-		abr_type = OSPF_ABR_STAND;
-	else
-		return CMD_WARNING_CONFIG_FAILED;
-
-	/* If ABR type value is changed, schedule ABR task. */
-	if (ospf->abr_type != abr_type) {
-		ospf->abr_type = abr_type;
-		ospf_schedule_abr_task(ospf);
-
-		/* The ABR task might not initiate SPF recalculation if the
-		 * OSPF flags remain the same. And inter-area routes would not
-		 * be added/deleted according to the new ABR type. So this
-		 * needs to be done here too.
-		 */
-		ospf_spf_calculate_schedule(ospf, SPF_FLAG_ABR_STATUS_CHANGE);
-	}
-
-	return CMD_SUCCESS;
+	nb_cli_enqueue_change(vty, "./ospf/abr-type", NB_OP_MODIFY, argv[2]->arg);
+	return nb_cli_apply_changes(vty, NULL);
 }
 
-DEFUN (no_ospf_abr_type,
-       no_ospf_abr_type_cmd,
-       "no ospf abr-type [<cisco|ibm|shortcut|standard>]",
-       NO_STR
-       "OSPF specific commands\n"
-       "Set OSPF ABR type\n"
-       "Alternative ABR, cisco implementation\n"
-       "Alternative ABR, IBM implementation\n"
-       "Shortcut ABR\n"
-       "Standard ABR\n")
+DEFPY_YANG (no_ospf_abr_type,
+			 no_ospf_abr_type_cmd,
+			 "no ospf abr-type [<cisco|ibm|shortcut|standard>]",
+			 NO_STR
+			 "OSPF specific commands\n"
+			 "Set OSPF ABR type\n"
+			 "Alternative ABR, cisco implementation\n"
+			 "Alternative ABR, IBM implementation\n"
+			 "Shortcut ABR\n"
+			 "Standard ABR\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-	int idx_vendor = 3;
-	uint8_t abr_type = OSPF_ABR_UNKNOWN;
-
-	if (strncmp(argv[idx_vendor]->arg, "c", 1) == 0)
-		abr_type = OSPF_ABR_CISCO;
-	else if (strncmp(argv[idx_vendor]->arg, "i", 1) == 0)
-		abr_type = OSPF_ABR_IBM;
-	else if (strncmp(argv[idx_vendor]->arg, "sh", 2) == 0)
-		abr_type = OSPF_ABR_SHORTCUT;
-	else if (strncmp(argv[idx_vendor]->arg, "st", 2) == 0)
-		abr_type = OSPF_ABR_STAND;
-	else
-		return CMD_WARNING_CONFIG_FAILED;
-
-	/* If ABR type value is changed, schedule ABR task. */
-	if (ospf->abr_type == abr_type) {
-		ospf->abr_type = OSPF_ABR_DEFAULT;
-		ospf_schedule_abr_task(ospf);
-	}
-
-	return CMD_SUCCESS;
+	nb_cli_enqueue_change(vty, "./ospf/abr-type", NB_OP_DESTROY, argv[2]->arg);
+	return nb_cli_apply_changes(vty, NULL);
 }
 
 DEFUN (ospf_log_adjacency_changes,
@@ -2206,35 +2108,27 @@ DEFUN (no_ospf_log_adjacency_changes_detail,
 	return CMD_SUCCESS;
 }
 
-DEFUN (ospf_compatible_rfc1583,
-       ospf_compatible_rfc1583_cmd,
-       "compatible rfc1583",
-       "OSPF compatibility list\n"
-       "compatible with RFC 1583\n")
+DEFPY_YANG (ospf_compatible_rfc1583,
+			ospf_compatible_rfc1583_cmd,
+			"compatible rfc1583",
+			"OSPF compatibility list\n"
+			"compatible with RFC 1583\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
+	nb_cli_enqueue_change(vty, "./ospf/rfc1583compatibility", NB_OP_MODIFY, "true");
 
-	if (!CHECK_FLAG(ospf->config, OSPF_RFC1583_COMPATIBLE)) {
-		SET_FLAG(ospf->config, OSPF_RFC1583_COMPATIBLE);
-		ospf_spf_calculate_schedule(ospf, SPF_FLAG_CONFIG_CHANGE);
-	}
-	return CMD_SUCCESS;
+	return nb_cli_apply_changes(vty, NULL);
 }
 
-DEFUN (no_ospf_compatible_rfc1583,
-       no_ospf_compatible_rfc1583_cmd,
-       "no compatible rfc1583",
-       NO_STR
-       "OSPF compatibility list\n"
-       "compatible with RFC 1583\n")
+DEFPY_YANG (no_ospf_compatible_rfc1583,
+			no_ospf_compatible_rfc1583_cmd,
+			"no compatible rfc1583",
+			NO_STR
+			"OSPF compatibility list\n"
+			"compatible with RFC 1583\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
+	nb_cli_enqueue_change(vty, "./ospf/rfc1583compatibility", NB_OP_MODIFY, "false");
 
-	if (CHECK_FLAG(ospf->config, OSPF_RFC1583_COMPATIBLE)) {
-		UNSET_FLAG(ospf->config, OSPF_RFC1583_COMPATIBLE);
-		ospf_spf_calculate_schedule(ospf, SPF_FLAG_CONFIG_CHANGE);
-	}
-	return CMD_SUCCESS;
+	return nb_cli_apply_changes(vty, NULL);
 }
 
 ALIAS(ospf_compatible_rfc1583, ospf_rfc1583_flag_cmd,
@@ -2539,48 +2433,32 @@ DEFUN (no_ospf_auto_cost_reference_bandwidth,
 	return CMD_SUCCESS;
 }
 
-DEFUN (ospf_write_multiplier,
-       ospf_write_multiplier_cmd,
-       "ospf write-multiplier (1-100)",
-       "OSPF specific commands\n"
-       "Write multiplier\n"
-       "Maximum number of interface serviced per write\n")
+DEFPY_YANG (ospf_write_multiplier,
+			ospf_write_multiplier_cmd,
+			"ospf write-multiplier (1-100)",
+			"OSPF specific commands\n"
+			"Write multiplier\n"
+			"Maximum number of interface serviced per write\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-	int idx_number;
-	uint32_t write_oi_count;
-
-	if (argc == 3)
-		idx_number = 2;
-	else
-		idx_number = 1;
-
-	write_oi_count = strtol(argv[idx_number]->arg, NULL, 10);
-	if (write_oi_count < 1 || write_oi_count > 100) {
-		vty_out(vty, "write-multiplier value is invalid\n");
-		return CMD_WARNING_CONFIG_FAILED;
-	}
-
-	ospf->write_oi_count = write_oi_count;
-	return CMD_SUCCESS;
+	nb_cli_enqueue_change(vty, "./ospf/write-multiplier", NB_OP_MODIFY, write_multiplier_str);
+	return nb_cli_apply_changes(vty, NULL);
 }
+
 
 ALIAS(ospf_write_multiplier, write_multiplier_cmd, "write-multiplier (1-100)",
       "Write multiplier\n"
       "Maximum number of interface serviced per write\n")
 
-DEFUN (no_ospf_write_multiplier,
-       no_ospf_write_multiplier_cmd,
-       "no ospf write-multiplier [(1-100)]",
-       NO_STR
-       "OSPF specific commands\n"
-       "Write multiplier\n"
-       "Maximum number of interface serviced per write\n")
+DEFPY_YANG (no_ospf_write_multiplier,
+			 no_ospf_write_multiplier_cmd,
+			 "no ospf write-multiplier [(1-100)]",
+			 NO_STR
+			 "OSPF specific commands\n"
+			 "Write multiplier\n"
+			 "Maximum number of interface serviced per write\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-
-	ospf->write_oi_count = OSPF_WRITE_INTERFACE_COUNT_DEFAULT;
-	return CMD_SUCCESS;
+	nb_cli_enqueue_change(vty, "./ospf/write-multiplier", NB_OP_DESTROY, write_multiplier_str);
+	return nb_cli_apply_changes(vty, NULL);
 }
 
 ALIAS(no_ospf_write_multiplier, no_write_multiplier_cmd,

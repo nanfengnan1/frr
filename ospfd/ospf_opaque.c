@@ -42,6 +42,8 @@
 #include "ospfd/ospf_ext.h"
 #include "ospfd/ospf_errors.h"
 
+#include "northbound_cli.h"
+
 DEFINE_MTYPE_STATIC(OSPFD, OSPF_OPAQUE_FUNCTAB, "OSPF opaque function table");
 DEFINE_MTYPE_STATIC(OSPFD, OPAQUE_INFO_PER_TYPE, "OSPF opaque per-type info");
 DEFINE_MTYPE_STATIC(OSPFD, OPAQUE_INFO_PER_ID, "OSPF opaque per-ID info");
@@ -845,75 +847,31 @@ void ospf_opaque_type9_lsa_if_cleanup(struct ospf_interface *oi)
  * Following are (vty) configuration functions for Opaque-LSAs handling.
  *------------------------------------------------------------------------*/
 
-DEFUN (capability_opaque,
-       capability_opaque_cmd,
-       "capability opaque",
-       "Enable specific OSPF feature\n"
-       "Opaque LSA\n")
-{
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-
-	/* Check that OSPF is using default VRF */
-	if (ospf->vrf_id != VRF_DEFAULT) {
-		vty_out(vty,
-			"OSPF Opaque LSA is only supported in default VRF\n");
-		return CMD_WARNING_CONFIG_FAILED;
-	}
-
-	/* Turn on the "master switch" of opaque-lsa capability. */
-	if (!CHECK_FLAG(ospf->config, OSPF_OPAQUE_CAPABLE)) {
-		if (IS_DEBUG_OSPF_OPAQUE_LSA)
-			zlog_debug("Opaque capability: OFF -> ON");
-
-		SET_FLAG(ospf->config, OSPF_OPAQUE_CAPABLE);
-		ospf_renegotiate_optional_capabilities(ospf);
-	}
-	return CMD_SUCCESS;
-}
-
-DEFUN (ospf_opaque,
+DEFUN_YANG (ospf_opaque,
        ospf_opaque_cmd,
        "ospf opaque-lsa",
        "OSPF specific commands\n"
        "Enable the Opaque-LSA capability (rfc2370)\n")
 {
-	return capability_opaque(self, vty, argc, argv);
+	nb_cli_enqueue_change(vty, "./ospf/opaque-lsa", NB_OP_MODIFY, "true");
+
+	return nb_cli_apply_changes(vty, NULL);
 }
 
-DEFUN (no_capability_opaque,
-       no_capability_opaque_cmd,
-       "no capability opaque",
-       NO_STR
-       "Enable specific OSPF feature\n"
-       "Opaque LSA\n")
+DEFUN_YANG (no_ospf_opaque,
+			no_ospf_opaque_cmd,
+			"no ospf opaque-lsa",
+			NO_STR
+			"OSPF specific commands\n"
+			"Enable the Opaque-LSA capability (rfc2370)\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
+	nb_cli_enqueue_change(vty, "./ospf/opaque-lsa", NB_OP_MODIFY, "false");
 
-	/* Turn off the "master switch" of opaque-lsa capability. */
-	if (CHECK_FLAG(ospf->config, OSPF_OPAQUE_CAPABLE)) {
-		if (IS_DEBUG_OSPF_OPAQUE_LSA)
-			zlog_debug("Opaque capability: ON -> OFF");
-
-		UNSET_FLAG(ospf->config, OSPF_OPAQUE_CAPABLE);
-		ospf_renegotiate_optional_capabilities(ospf);
-	}
-	return CMD_SUCCESS;
-}
-
-DEFUN (no_ospf_opaque,
-       no_ospf_opaque_cmd,
-       "no ospf opaque-lsa",
-       NO_STR
-       "OSPF specific commands\n"
-       "Enable the Opaque-LSA capability (rfc2370)\n")
-{
-	return no_capability_opaque(self, vty, argc, argv);
+	return nb_cli_apply_changes(vty, NULL);
 }
 
 static void ospf_opaque_register_vty(void)
 {
-	install_element(OSPF_NODE, &capability_opaque_cmd);
-	install_element(OSPF_NODE, &no_capability_opaque_cmd);
 	install_element(OSPF_NODE, &ospf_opaque_cmd);
 	install_element(OSPF_NODE, &no_ospf_opaque_cmd);
 	return;
