@@ -1094,7 +1094,7 @@ static void hiredis_uv_cb(redisAsyncContext *c, void *reply, void *privdata)
 		 * tun name: r->element[1]
 		 * msg data: r->element[2]
 		 */
-		zlog_debug("subscribe channel: %s, msg: %s", r->element[0]->str, r->element[2]->str);
+		zlog_debug("subscribe channel: %s, msg: %s", r->element[1]->str, r->element[2]->str);
 
 		event_add_event(master, hiredis_match_event,
 				XSTRDUP(MTYPE_HIREDIS, r->element[2]->str), 0 /*default none*/,
