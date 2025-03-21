@@ -194,7 +194,7 @@ static bool hiredis_get_change_next(hi_change_iter_t *iter, hi_change_oper_t ope
 				    hi_val_t **old_value, hi_val_t **new_value);
 static int hiredis_val_to_buff(const hi_val_t *value, char buffer[], size_t size);
 static int frr_hiredis_process_change(struct nb_config *candidate, hi_change_oper_t sr_op,
-				      hi_val_t *sr_old_val, hi_val_t *sr_new_val);
+				      hi_val_t *sr_old_val, hi_val_t *sr_new_val, bool end);
 static bool hiredis_config_change(const char *str, LYD_FORMAT format, hi_change_oper_t op);
 static bool frr_hiredis_change_apply(struct nb_config *candidate);
 
@@ -854,7 +854,7 @@ static int hiredis_val_to_buff(const hi_val_t *value, char buffer[], size_t size
 }
 
 static int frr_hiredis_process_change(struct nb_config *candidate, hi_change_oper_t sr_op,
-				      hi_val_t *sr_old_val, hi_val_t *sr_new_val)
+				      hi_val_t *sr_old_val, hi_val_t *sr_new_val, bool end)
 {
 	struct nb_node *nb_node;
 	enum nb_operation nb_op;
@@ -873,6 +873,10 @@ static int frr_hiredis_process_change(struct nb_config *candidate, hi_change_ope
 
 	/* Non-presence container - nothing to do. */
 	if (sr_data->type == HI_CONTAINER_T)
+		return NB_OK;
+
+	/* only delete longest xpath string */
+	if (sr_op == HI_OP_DELETED && !end)
 		return NB_OK;
 
 	nb_node = nb_node_find(xpath);
@@ -943,7 +947,8 @@ static bool hiredis_config_change(const char *str, LYD_FORMAT format, hi_change_
 	candidate = nb_config_dup(running_config);
 
 	while (hiredis_get_change_next(it, op, &sr_old_val, &sr_new_val)) {
-		ret = frr_hiredis_process_change(candidate, op, sr_old_val, sr_new_val);
+		ret = frr_hiredis_process_change(candidate, op, sr_old_val, sr_new_val,
+						 it->idx == it->set->count);
 
 		hiredis_free_val(sr_old_val);
 		hiredis_free_val(sr_new_val);
