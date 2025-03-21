@@ -72,6 +72,34 @@ const struct frr_yang_module_info frr_ospfd_lite_info = {
 			}
 		},
 		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/distance/admin-value",
+			.cbs = {
+				.modify = ospf_instance_distance_admin_value_modify,
+				.destroy = ospf_instance_distance_admin_value_destroy,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/distance/ospf/external",
+			.cbs = {
+				.modify = ospf_instance_distance_ospf_external_modify,
+				.destroy = ospf_instance_distance_ospf_external_destroy,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/distance/ospf/inter-area",
+			.cbs = {
+				.modify = ospf_instance_distance_ospf_inter_area_modify,
+				.destroy = ospf_instance_distance_ospf_inter_area_destroy,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/distance/ospf/intra-area",
+			.cbs = {
+				.modify = ospf_instance_distance_ospf_intra_area_modify,
+				.destroy = ospf_instance_distance_ospf_intra_area_destroy,
+			}
+		},		
+		{
 			.xpath = "/frr-ospfd-lite:ospf/instance/ospf/abr-type",
 			.cbs = {
 				.modify = ospf_instance_ospf_abr_type_modify,

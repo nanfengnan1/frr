@@ -90,6 +90,132 @@ int ospf_instance_destroy(struct nb_cb_destroy_args *args)
 }
 
 /*
+ * XPath: /frr-ospfd-lite:ospf/instance/distance/admin-value
+ */
+int ospf_instance_distance_admin_value_modify(struct nb_cb_modify_args *args)
+{
+	struct ospf *ospf;
+	uint8_t admin_value;
+
+	if (args->event != NB_EV_APPLY)
+		return NB_OK;
+
+	ospf = nb_running_get_entry(args->dnode, NULL, true);
+	admin_value = yang_dnode_get_uint8(args->dnode, NULL);
+
+	if (ospf->distance_all != admin_value) {
+		ospf->distance_all = admin_value;
+		ospf_restart_spf(ospf);
+	}
+
+	return NB_OK;
+}
+
+int ospf_instance_distance_admin_value_destroy(struct nb_cb_destroy_args *args)
+{
+	struct ospf *ospf;
+
+	if (args->event != NB_EV_APPLY)
+		return NB_OK;
+
+	ospf = nb_running_get_entry(args->dnode, NULL, true);
+
+	if (ospf->distance_all) {
+		ospf->distance_all = 0;
+		ospf_restart_spf(ospf);
+	}
+
+	return NB_OK;
+}
+
+/*
+ * XPath: /frr-ospfd-lite:ospf/instance/distance/ospf/external
+ */
+int ospf_instance_distance_ospf_external_modify(struct nb_cb_modify_args *args)
+{
+	struct ospf *ospf;
+
+	if (args->event != NB_EV_APPLY)
+		return NB_OK;
+
+	ospf = nb_running_get_entry(args->dnode, NULL, true);
+	ospf->distance_external = yang_dnode_get_uint8(args->dnode, NULL);
+
+	return NB_OK;
+}
+
+int ospf_instance_distance_ospf_external_destroy(struct nb_cb_destroy_args *args)
+{
+	struct ospf *ospf;
+
+	if (args->event != NB_EV_APPLY)
+		return NB_OK;
+
+	ospf = nb_running_get_entry(args->dnode, NULL, true);
+	ospf->distance_external = 0;
+
+	return NB_OK;
+}
+
+/*
+ * XPath: /frr-ospfd-lite:ospf/instance/distance/ospf/inter-area
+ */
+int ospf_instance_distance_ospf_inter_area_modify(struct nb_cb_modify_args *args)
+{
+	struct ospf *ospf;
+
+	if (args->event != NB_EV_APPLY)
+		return NB_OK;
+
+	ospf = nb_running_get_entry(args->dnode, NULL, true);
+	ospf->distance_inter = yang_dnode_get_uint8(args->dnode, NULL);
+
+	return NB_OK;
+}
+
+int ospf_instance_distance_ospf_inter_area_destroy(struct nb_cb_destroy_args *args)
+{
+	struct ospf *ospf;
+
+	if (args->event != NB_EV_APPLY)
+		return NB_OK;
+
+	ospf = nb_running_get_entry(args->dnode, NULL, true);
+	ospf->distance_inter = 0;
+
+	return NB_OK;
+}
+
+/*
+ * XPath: /frr-ospfd-lite:ospf/instance/distance/ospf/intra-area
+ */
+int ospf_instance_distance_ospf_intra_area_modify(struct nb_cb_modify_args *args)
+{
+	struct ospf *ospf;
+
+	if (args->event != NB_EV_APPLY)
+		return NB_OK;
+
+	ospf = nb_running_get_entry(args->dnode, NULL, true);
+	ospf->distance_intra = yang_dnode_get_uint8(args->dnode, NULL);
+
+	return NB_OK;
+}
+
+int ospf_instance_distance_ospf_intra_area_destroy(struct nb_cb_destroy_args *args)
+{
+	struct ospf *ospf;
+
+	if (args->event != NB_EV_APPLY)
+		return NB_OK;
+
+	ospf = nb_running_get_entry(args->dnode, NULL, true);
+	ospf->distance_intra = 0;
+
+	return NB_OK;
+}
+
+/*
  * XPath: /frr-ospfd-lite:ospf/instance/ospf/abr-type
  */
 int ospf_instance_ospf_abr_type_modify(struct nb_cb_modify_args *args)

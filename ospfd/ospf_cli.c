@@ -23,6 +23,28 @@ static void ospf_instance_cli_write(struct vty *vty, const struct lyd_node *dnod
 	/* TODO: this cli callback is optional; the cli output may not need to be done at each node. */
 }
 
+void ospf_instance_distance_admin_value_cli_write(struct vty *vty, const struct lyd_node *dnode, bool show_defaults)
+{
+	/* TODO: this cli callback is optional; the cli output may not need to be done at each node. */
+}
+
+void ospf_instance_distance_ospf_external_cli_write(struct vty *vty, const struct lyd_node *dnode, bool show_defaults)
+{
+	/* TODO: this cli callback is optional; the cli output may not need to be done at each node. */
+}
+
+void ospf_instance_distance_ospf_inter_area_cli_write(struct vty *vty, const struct lyd_node *dnode, bool show_defaults)
+{
+	/* TODO: this cli callback is optional; the cli output may not need to be done at each node. */
+}
+
+void ospf_instance_distance_ospf_inter_area_cli_write(struct vty *vty, const struct lyd_node *dnode, bool show_defaults)
+{
+	/* TODO: this cli callback is optional; the cli output may not need to be done at each node. */
+}
+
+
+
 void ospf_instance_ospf_abr_type_cli_write(struct vty *vty, const struct lyd_node *dnode, bool show_defaults)
 {
 	/* TODO: this cli callback is optional; the cli output may not need to be done at each node. */
@@ -72,6 +94,30 @@ const struct frr_yang_module_info frr_ospfd_lite_cli_info = {
 	      .cli_show = ospf_instance_cli_write,
 	    }
     },
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/distance/admin-value",
+			.cbs = {
+				.cli_show = ospf_instance_distance_admin_value_cli_write,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/distance/ospf/external",
+			.cbs = {
+				.cli_show = ospf_instance_distance_ospf_external_cli_write,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/distance/ospf/inter-area",
+			.cbs = {
+				.cli_show = ospf_instance_distance_ospf_inter_area_cli_write,
+			}
+		},
+		{
+			.xpath = "/frr-ospfd-lite:ospf/instance/distance/ospf/intra-area",
+			.cbs = {
+				.cli_show = ospf_instance_distance_ospf_intra_area_cli_write,
+			}
+		},    
 		{
 			.xpath = "/frr-ospfd-lite:ospf/instance/ospf/abr-type",
 			.cbs = {

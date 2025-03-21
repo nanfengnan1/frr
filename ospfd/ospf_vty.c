@@ -9484,43 +9484,31 @@ DEFUN (no_ospf_default_metric,
 }
 
 
-DEFUN (ospf_distance,
+/*
+ * XPath: /frr-ospfd-lite:ospf/instance/distance/admin-value
+ */
+DEFPY_YANG (ospf_distance,
        ospf_distance_cmd,
        "distance (1-255)",
        "Administrative distance\n"
        "OSPF Administrative distance\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-	int idx_number = 1;
-	uint8_t distance;
-
-	distance = atoi(argv[idx_number]->arg);
-	if (ospf->distance_all != distance) {
-		ospf->distance_all = distance;
-		ospf_restart_spf(ospf);
-	}
-
-	return CMD_SUCCESS;
+	nb_cli_enqueue_change(vty, "./distance/admin-value", NB_OP_MODIFY, distance_str);
+	return nb_cli_apply_changes(vty, NULL);
 }
 
-DEFUN (no_ospf_distance,
+DEFPY_YANG (no_ospf_distance,
        no_ospf_distance_cmd,
        "no distance [(1-255)]",
        NO_STR
        "Administrative distance\n"
        "OSPF Administrative distance\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-
-	if (ospf->distance_all) {
-		ospf->distance_all = 0;
-		ospf_restart_spf(ospf);
-	}
-
-	return CMD_SUCCESS;
+	nb_cli_enqueue_change(vty, "./distance/admin-value", NB_OP_DESTROY, NULL);
+	return nb_cli_apply_changes(vty, NULL);
 }
 
-DEFUN (no_ospf_distance_ospf,
+DEFPY_YANG (no_ospf_distance_ospf,
        no_ospf_distance_ospf_cmd,
        "no distance ospf [{intra-area [(1-255)]|inter-area [(1-255)]|external [(1-255)]}]",
        NO_STR
@@ -9533,20 +9521,17 @@ DEFUN (no_ospf_distance_ospf,
        "External routes\n"
        "Distance for external routes\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-	int idx = 0;
+	if (intra_area)
+		nb_cli_enqueue_change(vty, "./distance/ospf/intra-area", NB_OP_DESTROY, NULL);
+	if (inter_area)
+		nb_cli_enqueue_change(vty, "./distance/ospf/inter-area", NB_OP_DESTROY, NULL);
+	if (external)
+		nb_cli_enqueue_change(vty, "./distance/ospf/external", NB_OP_DESTROY, NULL);
 
-	if (argv_find(argv, argc, "intra-area", &idx) || argc == 3)
-		idx = ospf->distance_intra = 0;
-	if (argv_find(argv, argc, "inter-area", &idx) || argc == 3)
-		idx = ospf->distance_inter = 0;
-	if (argv_find(argv, argc, "external", &idx) || argc == 3)
-		ospf->distance_external = 0;
-
-	return CMD_SUCCESS;
+	return nb_cli_apply_changes(vty, NULL);
 }
 
-DEFUN (ospf_distance_ospf,
+DEFPY_YANG (ospf_distance_ospf,
        ospf_distance_ospf_cmd,
        "distance ospf {intra-area (1-255)|inter-area (1-255)|external (1-255)}",
        "Administrative distance\n"
@@ -9558,23 +9543,16 @@ DEFUN (ospf_distance_ospf,
        "External routes\n"
        "Distance for external routes\n")
 {
-	VTY_DECLVAR_INSTANCE_CONTEXT(ospf, ospf);
-	int idx = 0;
+	if (intra_area)
+		nb_cli_enqueue_change(vty, "./distance/ospf/intra-area", NB_OP_MODIFY,
+				      intra_area_str);
+	if (inter_area)
+		nb_cli_enqueue_change(vty, "./distance/ospf/inter-area", NB_OP_MODIFY,
+				      inter_area_str);
+	if (external)
+		nb_cli_enqueue_change(vty, "./distance/ospf/external", NB_OP_MODIFY, external_str);
 
-	ospf->distance_intra = 0;
-	ospf->distance_inter = 0;
-	ospf->distance_external = 0;
-
-	if (argv_find(argv, argc, "intra-area", &idx))
-		ospf->distance_intra = atoi(argv[idx + 1]->arg);
-	idx = 0;
-	if (argv_find(argv, argc, "inter-area", &idx))
-		ospf->distance_inter = atoi(argv[idx + 1]->arg);
-	idx = 0;
-	if (argv_find(argv, argc, "external", &idx))
-		ospf->distance_external = atoi(argv[idx + 1]->arg);
-
-	return CMD_SUCCESS;
+	return nb_cli_apply_changes(vty, NULL);
 }
 
 DEFUN (ip_ospf_mtu_ignore,
